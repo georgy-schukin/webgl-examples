@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>	
+	<title>Cube with WebGL</title>	
+	<meta charset="utf-8">
+	<link rel="stylesheet" type="text/css" href="style.css">	
+	<script type="text/javascript" src="https://code.jquery.com/jquery-3.0.0.min.js"></script>	
+	<script type="text/javascript" src="../libs/wgl.js"></script>		
+	<script type="text/javascript" src="../libs/gl-matrix-min.js"></script>		
+	<script type="text/javascript" src="app.js"></script>		
+</head>
+<body>	
+	<canvas id="canvas"></canvas>
+
+	<script type="text/javascript">	
+		$(document).ready( function () {
+			init();
+			render();
+		});
+	</script>
+
+	<script id="vert-shader" type="text/vert-shader">
+		attribute vec2 a_position; 
+		void main() {
+  			gl_Position = vec4(a_position, 0, 1);
+		}
+	</script>
+
+	<script id="frag-shader" type="text/frag-shader">
+		void main() {
+	 		gl_FragColor = vec4(0, 1, 0, 1);  
+		}
+	</script>
+</body>
+</html>
