@@ -5,6 +5,7 @@ var vertexBuffer, indexBuffer, colorBuffer;
 var numOfIndices;
 var program;
 var modelviewMatrix, projectionMatrix;
+var frameCounter = 0;
 
 function initGL() {
 	gl.clearColor(0.0, 0.0, 0.2, 1.0);	
@@ -93,13 +94,18 @@ function drawGL() {
 
 	gl.useProgram(program);
 
-	var modelviewLocation = gl.getUniformLocation(program, "modelview");
-	var projectionLocation = gl.getUniformLocation(program, "projection");
+	var modelviewLocation = gl.getUniformLocation(program, "u_modelview");
+	var projectionLocation = gl.getUniformLocation(program, "u_projection");
+	var transparencyLocation = gl.getUniformLocation(program, "u_transparency");
+
 	gl.uniformMatrix4fv(modelviewLocation, false, modelviewMatrix);	
 	gl.uniformMatrix4fv(projectionLocation, false, projectionMatrix);	
+	
+	var currTransparency = Math.abs(Math.cos(Math.PI*(frameCounter++)/360.0));
+	gl.uniform1f(transparencyLocation, currTransparency);
 
-	var positionLocation = gl.getAttribLocation(program, "position");
-	var colorLocation = gl.getAttribLocation(program, "color");
+	var positionLocation = gl.getAttribLocation(program, "a_position");
+	var colorLocation = gl.getAttribLocation(program, "a_color");
 
 	gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
 	gl.enableVertexAttribArray(positionLocation);
