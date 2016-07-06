@@ -4,14 +4,15 @@ var WGL = WGL || {};
 
 (function (wgl) {
 
-function getGLContext(canvasId) {
+function getGLContextFromCanvas(canvasId) {
 	var gl = null;
 	try {
+		canvasId = canvasId || "canvas"; // set default canvas id if necessary
 		var canvas = document.getElementById(canvasId);	
-		gl = canvas.getContext("experimental-webgl");		
+		gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
 	}
 	catch (e) {
-		alert("Error creating WebGL context: " + e.toString());
+		throw "Error creating WebGL context: " + e.toString();
 	}	
 	return gl;
 }
@@ -24,7 +25,7 @@ function compileShader(gl, shaderSource, shaderType) {
 	gl.compileShader(shader);
 	var success = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
 	if (!success) {    
-		throw "Could not compile shader:" + gl.getShaderInfoLog(shader);
+		throw "Could not compile shader: " + gl.getShaderInfoLog(shader);
 	}
 	return shader;
 }	
@@ -38,13 +39,22 @@ function createProgram(gl, vertexShader, fragmentShader) {
 	gl.linkProgram(program);	
 	var success = gl.getProgramParameter(program, gl.LINK_STATUS);
 	if (!success) {	  
-	  	throw ("Program filed to link:" + gl.getProgramInfoLog(program));
+	  	throw "Program filed to link: " + gl.getProgramInfoLog(program);
 	}
 	return program;
 }
 
-wgl.getGLContext = getGLContext;
+function createProgramFromScripts(gl, vertexShaderId, fragmentShaderId) {
+	var vertexShaderSource = document.getElementById(vertexShaderId).text;
+	var fragmentShaderSource = document.getElementById(fragmentShaderId).text;
+	var vertexShader = compileShader(gl, vertexShaderSource, gl.VERTEX_SHADER);
+	var fragmentShader = compileShader(gl, fragmentShaderSource, gl.FRAGMENT_SHADER);
+	return createProgram(gl, vertexShader, fragmentShader);
+}
+
+wgl.getGLContextFromCanvas = getGLContextFromCanvas;
 wgl.compileShader = compileShader;
 wgl.createProgram = createProgram;
+wgl.createProgramFromScripts = createProgramFromScripts;
 	
 })(WGL);
