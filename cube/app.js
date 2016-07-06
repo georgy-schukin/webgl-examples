@@ -9,7 +9,9 @@ var frameCounter = 0;
 
 function initGL() {
 	gl.clearColor(0.0, 0.0, 0.2, 1.0);	
-	gl.enable(gl.DEPTH_TEST);
+	gl.disable(gl.DEPTH_TEST);
+	gl.enable(gl.BLEND);
+	gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
 }
 
 function resizeCanvas() {
@@ -101,7 +103,7 @@ function drawGL() {
 	gl.uniformMatrix4fv(modelviewLocation, false, modelviewMatrix);	
 	gl.uniformMatrix4fv(projectionLocation, false, projectionMatrix);	
 	
-	var currTransparency = Math.abs(Math.cos(Math.PI*(frameCounter++)/360.0));
+	var currTransparency = 0.5*Math.cos(Math.PI*(frameCounter++)/360.0) + 0.5;
 	gl.uniform1f(transparencyLocation, currTransparency);
 
 	var positionLocation = gl.getAttribLocation(program, "a_position");
