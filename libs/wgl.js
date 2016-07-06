@@ -30,11 +30,12 @@ function compileShader(gl, shaderSource, shaderType) {
 	return shader;
 }	
 
-function createProgram(gl, vertexShader, fragmentShader) {	
+function createProgram(gl, shaders) {	
 	var program = gl.createProgram();
 	
-	gl.attachShader(program, vertexShader);
-	gl.attachShader(program, fragmentShader);
+	shaders.forEach( function (shader) {
+		gl.attachShader(program, shader);	
+	});	
 
 	gl.linkProgram(program);	
 	var success = gl.getProgramParameter(program, gl.LINK_STATUS);
@@ -49,7 +50,7 @@ function createProgramFromScripts(gl, vertexShaderId, fragmentShaderId) {
 	var fragmentShaderSource = document.getElementById(fragmentShaderId).text;
 	var vertexShader = compileShader(gl, vertexShaderSource, gl.VERTEX_SHADER);
 	var fragmentShader = compileShader(gl, fragmentShaderSource, gl.FRAGMENT_SHADER);
-	return createProgram(gl, vertexShader, fragmentShader);
+	return createProgram(gl, [vertexShader, fragmentShader]);
 }
 
 wgl.getGLContextFromCanvas = getGLContextFromCanvas;
