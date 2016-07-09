@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>	
+	<title>Wave with WebGL</title>	
+	<meta charset="utf-8">
+	<link rel="stylesheet" type="text/css" href="style.css">	
+	<script type="text/javascript" src="https://code.jquery.com/jquery-3.0.0.min.js"></script>	
+	<script type="text/javascript" src="../lib/wgl/wgl.js"></script>		
+	<script type="text/javascript" src="../lib/requestAnimationFrame.js"></script>		
+	<script type="text/javascript" src="../lib/gl-matrix-min.js"></script>		
+	<script type="text/javascript" src="app.js"></script>
+</head>
+<body>	
+	<canvas id="canvas"></canvas>
+
+	<script type="text/javascript">	
+		$(document).ready( function () {		
+			init();
+			render();
+		});
+	</script>
+
+	<script id="vert-shader" type="text/vert-shader">
+		precision mediump float;
+
+		attribute vec3 a_position; 		
+
+		uniform mat4 u_modelview;
+		uniform mat4 u_projection;	
+		uniform float u_shift;	
+
+		void main() {
+			float x = a_position.x;
+			float z = a_position.z;
+			float y = sin(x + u_shift)*cos(z + u_shift);			
+  			gl_Position = u_projection * u_modelview * vec4(x, y, z, 1.0);  			
+		}
+	</script>
+
+	<script id="frag-shader" type="text/frag-shader">
+		precision mediump float;	
+
+		void main() {
+	 		gl_FragColor = vec4(0.0, 0.9, 0.9, 1.0);  	 		
+		}
+	</script>
+</body>
+</html>

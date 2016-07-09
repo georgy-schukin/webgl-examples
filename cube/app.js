@@ -144,7 +144,7 @@ function init() {
 }
 
 function render() {	
-	WGL.initViewportToFitCanvas(gl);
+	WGL.fitViewportToCanvas(gl);
 	drawGL();	
 	update();
 	requestAnimationFrame(render);		
