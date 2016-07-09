@@ -1,8 +1,7 @@
 "use strict";
 
 var gl;
-var vertexBuffer, indexBuffer, colorBuffer;
-var numOfIndices;
+var buffers = {};
 var program;
 var modelviewMatrix, projectionMatrix;
 var frameCounter = 0;
@@ -18,10 +17,11 @@ function resizeCanvas() {
 	var displayWidth = gl.canvas.clientWidth;
 	var displayHeight = gl.canvas.clientHeight;
 
-	gl.canvas.width = displayWidth;
-	gl.canvas.height = displayHeight;
-
-	gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+	if (gl.canvas.width != displayWidth || gl.canvas.height != displayHeight) {
+		gl.canvas.width = displayWidth;
+		gl.canvas.height = displayHeight;
+		gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+	}
 }
 
 function initMVP() {
@@ -41,8 +41,8 @@ function initProgram() {
 	}
 }
 
-function initCube() {
-	var vertices = new Float32Array([
+function makeCube() {
+	var vertices = [
     	-1.0, -1.0, -1.0,
      	 1.0, -1.0, -1.0,
     	 1.0, -1.0,  1.0,
@@ -50,9 +50,9 @@ function initCube() {
      	-1.0,  1.0, -1.0,
      	 1.0,  1.0, -1.0,
     	 1.0,  1.0,  1.0,
-    	-1.0,  1.0,  1.0]);
+    	-1.0,  1.0,  1.0];
 
-	var colors = new Float32Array([
+	var colors = [
 		1.0, 0.0, 0.0,
 		0.0, 1.0, 0.0,
 		0.0, 0.0, 1.0,
@@ -60,9 +60,9 @@ function initCube() {
 		1.0, 0.0, 1.0,
 		0.0, 1.0, 1.0, 
 		0.5, 0.0, 0.5,
-		0.0, 0.5, 0.5]);
+		0.0, 0.5, 0.5];
 
-	var indices = new Uint16Array([
+	var indices = [
 		0, 1, 2, // bottom
 		0, 2, 3,
 		0, 1, 5, // side 1
@@ -74,21 +74,33 @@ function initCube() {
 		3, 0, 4, // side 4
 		3, 4, 7,
 		4, 5, 6, // top
-		4, 6, 7]);
+		4, 6, 7];
 
-	numOfIndices = indices.length;
+	return {
+		vertices: vertices,
+		colors: colors,
+		indices: indices
+	}	
+}
 
-	vertexBuffer = gl.createBuffer();
-	gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-	gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+function initCube() {
+	var cube = makeCube();
+	
+	buffers = {}
 
-	colorBuffer = gl.createBuffer();
-	gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-	gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STATIC_DRAW);
+	buffers.vertexBuffer = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, buffers.vertexBuffer);
+	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(cube.vertices), gl.STATIC_DRAW);
 
-	indexBuffer = gl.createBuffer();
-	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-	gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
+	buffers.colorBuffer = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, buffers.colorBuffer);
+	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(cube.colors), gl.STATIC_DRAW);
+
+	buffers.indexBuffer = gl.createBuffer();
+	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.indexBuffer);
+	gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(cube.indices), gl.STATIC_DRAW);
+
+	buffers.numOfIndices = cube.indices.length;	
 }
 
 function drawGL() {
@@ -109,17 +121,17 @@ function drawGL() {
 	var positionLocation = gl.getAttribLocation(program, "a_position");
 	var colorLocation = gl.getAttribLocation(program, "a_color");
 
-	gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+	gl.bindBuffer(gl.ARRAY_BUFFER, buffers.vertexBuffer);
 	gl.enableVertexAttribArray(positionLocation);
 	gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);
 
-	gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+	gl.bindBuffer(gl.ARRAY_BUFFER, buffers.colorBuffer);
 	gl.enableVertexAttribArray(colorLocation);
 	gl.vertexAttribPointer(colorLocation, 3, gl.FLOAT, false, 0, 0);
 
-	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);	
+	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.indexBuffer);	
 
-	gl.drawElements(gl.TRIANGLES, numOfIndices, gl.UNSIGNED_SHORT, 0);			
+	gl.drawElements(gl.TRIANGLES, buffers.numOfIndices, gl.UNSIGNED_SHORT, 0);			
 }
 
 function update() {
@@ -139,12 +151,12 @@ function init() {
 	initGL();
 	initMVP();
 	initProgram();
-	initCube();
-	resizeCanvas();
+	initCube();	
 }
 
-function render() {
-	requestAnimationFrame(render);		
+function render() {	
+	resizeCanvas();
 	drawGL();	
 	update();
+	requestAnimationFrame(render);		
 }
