@@ -24,21 +24,24 @@
 		precision mediump float;
 
 		attribute vec3 a_position; 		
+		attribute vec3 a_normal;
 
-		uniform mat4 u_modelview;
-		uniform mat4 u_projection;	
-		uniform float u_shift;	
+		uniform mat4 u_modelviewMatrix;
+		uniform mat4 u_projectionMatrix;	
+		uniform mat3 u_normalMatrix; 		
 
-		void main() {
-			float x = a_position.x;
-			float z = a_position.z;
-			float y = sin(x + u_shift)*cos(z + u_shift);			
-  			gl_Position = u_projection * u_modelview * vec4(x, y, z, 1.0);  			
+		varying vec3 v_normal;
+
+		void main() {			
+  			gl_Position = u_projectionMatrix * u_modelviewMatrix * vec4(a_position, 1.0);  		
+  			v_normal = a_normal;
 		}
 	</script>
 
 	<script id="frag-shader" type="text/frag-shader">
-		precision mediump float;	
+		precision mediump float;
+
+		varying vec3 v_normal;	
 
 		void main() {
 	 		gl_FragColor = vec4(0.0, 0.9, 0.9, 1.0);  	 		
