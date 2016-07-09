@@ -13,17 +13,6 @@ function initGL() {
 	gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
 }
 
-function resizeCanvas() {
-	var displayWidth = gl.canvas.clientWidth;
-	var displayHeight = gl.canvas.clientHeight;
-
-	if (gl.canvas.width != displayWidth || gl.canvas.height != displayHeight) {
-		gl.canvas.width = displayWidth;
-		gl.canvas.height = displayHeight;
-		gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-	}
-}
-
 function initMVP() {
 	modelviewMatrix = mat4.create();
 	mat4.lookAt(modelviewMatrix, [10.0, 10.0, 10.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
@@ -155,7 +144,7 @@ function init() {
 }
 
 function render() {	
-	resizeCanvas();
+	WGL.initViewportToFitCanvas(gl);
 	drawGL();	
 	update();
 	requestAnimationFrame(render);		
