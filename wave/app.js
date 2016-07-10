@@ -205,3 +205,11 @@ function render() {
 	rotateModel();
 	requestAnimationFrame(render);		
 }
+
+function setMeshSize(size) {
+	waveMeshSize = size;
+}
+
+function setMeshPoints(num) {
+	waveMeshPointsNum = num;
+}

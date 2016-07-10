@@ -4,19 +4,44 @@
 	<title>Wave with WebGL</title>	
 	<meta charset="utf-8">
 	<link rel="stylesheet" type="text/css" href="style.css">	
-	<script type="text/javascript" src="https://code.jquery.com/jquery-3.0.0.min.js"></script>	
+	<script type="text/javascript" src="../lib/jquery-3.0.0.min.js"></script>	
 	<script type="text/javascript" src="../lib/wgl/wgl.js"></script>		
 	<script type="text/javascript" src="../lib/requestAnimationFrame.js"></script>		
 	<script type="text/javascript" src="../lib/gl-matrix-min.js"></script>		
 	<script type="text/javascript" src="app.js"></script>
 </head>
 <body>	
+	<div id="controls-pane">
+		<table>
+		<tr>
+		<td><label>Mesh size:</label></td>
+		<td><input type="number" id="mesh-size" value="100" min="1" max="1000"></td>
+		</tr>
+		<tr>
+		<td><label>Mesh points:</label></td>
+		<td><input type="number" id="mesh-points" value="101" min="1" max="256"></td>
+		</tr>
+		</table>
+	</div>
 	<canvas id="canvas"></canvas>
 
 	<script type="text/javascript">	
-		$(document).ready( function () {		
-			init();
+		$(document).ready( function () {					
+			var $meshSize = $("#mesh-size");
+			var $meshPoints = $("#mesh-points");
+
+			setMeshSize($meshSize.val());
+			setMeshPoints($meshPoints.val());
+
+			init();			
 			render();
+
+			$meshSize.change( function (event) {
+				setMeshSize($(this).val());
+			});
+			$meshPoints.change( function (event) {
+				setMeshPoints($(this).val());
+			});
 		});
 	</script>
 
