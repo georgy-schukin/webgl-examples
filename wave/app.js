@@ -2,8 +2,8 @@
 
 var gl;
 var buffers = {};
+var matrices = {};
 var program;
-var modelviewMatrix, projectionMatrix;
 var shift = 0.0;
 
 function initGL() {
@@ -11,12 +11,15 @@ function initGL() {
 	gl.enable(gl.DEPTH_TEST);
 }
 
-function initMVP() {
-	modelviewMatrix = mat4.create();
-	mat4.lookAt(modelviewMatrix, [100.0, 100.0, 100.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);	
+function initMatrices() {
+	matrices.modelMatrix = mat4.create();	
+	mat4.identity(matrices.modelMatrix);
 
-	projectionMatrix = mat4.create();
-	mat4.perspective(projectionMatrix, Math.PI/5, gl.canvas.clientWidth/gl.canvas.clientHeight, 0.01, 1000.0);	
+	matrices.viewMatrix = mat4.create();
+	mat4.lookAt(matrices.viewMatrix, [100.0, 100.0, 100.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);	
+
+	matrices.projectionMatrix = mat4.create();
+	mat4.perspective(matrices.projectionMatrix, Math.PI/5, gl.canvas.clientWidth/gl.canvas.clientHeight, 0.01, 1000.0);	
 }
 
 function initProgram() {
@@ -37,15 +40,15 @@ function makeSurface(surfaceFunc, originByX, originByY, numOfPointsByX, numOfPoi
 		for (var j = 0; j < numOfPointsByX; j++) {
 			var x = originByX + j*stepByX;
 			var y = originByY + i*stepByY;			
-			var z = surfaceFunc(x + shift, y + shift);
+			var z = surfaceFunc.f(x, y);
 			vertices.push(x); 
 			vertices.push(z); 
 			vertices.push(y); 
-			var dfdx = (surfaceFunc(x + h, y) - z)/h; // df/dx approximation
-			var dfdy = (surfaceFunc(x, y + h) - z)/h; // df/dy approximation
-			normals.push(dfdx);
-			normals.push(-1);
-			normals.push(dfdy);
+			var dfdx = surfaceFunc.dfdx(x, y);
+			var dfdy = surfaceFunc.dfdy(x, y);			
+			normals.push(-dfdx);
+			normals.push(1.0);
+			normals.push(-dfdy);
 		}
 	}		
 
@@ -69,26 +72,55 @@ function makeSurface(surfaceFunc, originByX, originByY, numOfPointsByX, numOfPoi
 	}	
 }
 
-function initWave(shift) {
-	var surfaceFunc = function (x, y) {
-		return Math.sin(x + shift)*Math.cos(y + shift);
+function makeWave(shift) {
+	var surfaceFunc = {
+		f: function (x, y) {
+			return 2.0*Math.sin(Math.sqrt(x*x + y*y) - shift);
+		},
+		dfdx: function (x, y) {
+			var sqrt = Math.sqrt(x*x + y*y);
+			if (sqrt == 0.0) return 0.0;			
+			return 2.0*x*Math.cos(sqrt - shift)/sqrt;	
+		},
+		dfdy: function (x, y) {
+			var sqrt = Math.sqrt(x*x + y*y);
+			if (sqrt == 0.0) return 0.0;			
+			return 2.0*y*Math.cos(sqrt - shift)/sqrt;	
+		}
 	}
 
-	var pointsByX = 101;
-	var pointsByZ = 101;
-	var wave = makeSurface(surfaceFunc, -50, -50, pointsByX, pointsByZ, 100/(pointsByX - 1), 100/(pointsByZ - 1));
-	
-	buffers = {}
+	var numOfPoints = 101;
+	var meshSize = 100.0;	
+	var wave = makeSurface(surfaceFunc, 
+		-meshSize/2, -meshSize/2, 
+		numOfPoints, numOfPoints, 
+		meshSize/(numOfPoints - 1), meshSize/(numOfPoints - 1));		
+	return wave;
+}
 
-	buffers.vertexBuffer = gl.createBuffer();
+function initBuffers() {
+	if (buffers.vertexBuffer === undefined) {
+		buffers.vertexBuffer = gl.createBuffer();
+	}	
+	if (buffers.normalBuffer === undefined) {
+		buffers.normalBuffer = gl.createBuffer();
+	}
+	if (buffers.indexBuffer === undefined) {
+		buffers.indexBuffer = gl.createBuffer();
+	}
+}
+
+function initWave(shift) {
+	var wave = makeWave(shift);
+
+	initBuffers();
+	
 	gl.bindBuffer(gl.ARRAY_BUFFER, buffers.vertexBuffer);
 	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(wave.vertices), gl.STATIC_DRAW);	
-
-	buffers.normalBuffer = gl.createBuffer();
+	
 	gl.bindBuffer(gl.ARRAY_BUFFER, buffers.normalBuffer);
 	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(wave.normals), gl.STATIC_DRAW);	
 
-	buffers.indexBuffer = gl.createBuffer();
 	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.indexBuffer);
 	gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(wave.indices), gl.STATIC_DRAW);
 
@@ -112,9 +144,13 @@ function drawGL() {
 	var projectionMatrixLocation = gl.getUniformLocation(program, "u_projectionMatrix");	
 	var normalMatrixLocation = gl.getUniformLocation(program, "u_normalMatrix");		
 
+	var modelviewMatrix = mat4.create();
+	mat4.multiply(modelviewMatrix, matrices.viewMatrix, matrices.modelMatrix);
+	var normalMatrix = getNormalMatrix(modelviewMatrix);
+
 	gl.uniformMatrix4fv(modelviewMatrixLocation, false, modelviewMatrix);	
-	gl.uniformMatrix4fv(projectionMatrixLocation, false, projectionMatrix);		
-	gl.uniformMatrix3fv(normalMatrixLocation, false, getNormalMatrix(modelviewMatrix));		
+	gl.uniformMatrix4fv(projectionMatrixLocation, false, matrices.projectionMatrix);		
+	gl.uniformMatrix3fv(normalMatrixLocation, false, normalMatrix);		
 
 	var positionLocation = gl.getAttribLocation(program, "a_position");
 	var normalLocation = gl.getAttribLocation(program, "a_normal");
@@ -132,13 +168,13 @@ function drawGL() {
 	gl.drawElements(gl.TRIANGLES, buffers.numOfIndices, gl.UNSIGNED_SHORT, 0);			
 }
 
-function updateView() {
-	mat4.rotate(modelviewMatrix, modelviewMatrix, -Math.PI/(4*180.0), [0, 1, 0]);
+function rotateModel() {
+	mat4.rotate(matrices.modelMatrix, matrices.modelMatrix, -Math.PI/(4*180.0), [0, 1, 0]);
 }
 
 function updateWave() {	
 	initWave(shift);	
-	shift += 0.1;
+	shift += 0.2;
 	setTimeout(updateWave, 100);
 }
 
@@ -153,7 +189,7 @@ function init() {
 		alert(err.toString());
 	}	
 	initGL();
-	initMVP();
+	initMatrices();
 	initProgram();
 	updateWave();
 }
@@ -161,6 +197,6 @@ function init() {
 function render() {	
 	WGL.fitViewportToCanvas(gl);
 	drawGL();	
-	updateView();
+	rotateModel();
 	requestAnimationFrame(render);		
 }
