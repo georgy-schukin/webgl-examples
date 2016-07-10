@@ -33,9 +33,7 @@ function initProgram() {
 
 function makeSurface(surfaceFunc, originByX, originByY, numOfPointsByX, numOfPointsByY, stepByX, stepByY) {
 	var vertices = [];
-	var normals = [];
-	var h = 1e-5;
-
+	var normals = [];	
 	for (var i = 0; i < numOfPointsByY; i++) {
 		for (var j = 0; j < numOfPointsByX; j++) {
 			var x = originByX + j*stepByX;
@@ -43,9 +41,9 @@ function makeSurface(surfaceFunc, originByX, originByY, numOfPointsByX, numOfPoi
 			var z = surfaceFunc.f(x, y);
 			vertices.push(x); 
 			vertices.push(z); 
-			vertices.push(y); 
+			vertices.push(y); 			
 			var dfdx = surfaceFunc.dfdx(x, y);
-			var dfdy = surfaceFunc.dfdy(x, y);			
+			var dfdy = surfaceFunc.dfdy(x, y);								
 			normals.push(-dfdx);
 			normals.push(1.0);
 			normals.push(-dfdy);
@@ -53,7 +51,6 @@ function makeSurface(surfaceFunc, originByX, originByY, numOfPointsByX, numOfPoi
 	}		
 
 	var indices = [];
-
 	for (var i = 0; i < numOfPointsByY - 1; i++) {
 		for (var j = 0; j < numOfPointsByX - 1; j++) {
 			indices.push(i*numOfPointsByX + j); // first triangle
@@ -75,17 +72,17 @@ function makeSurface(surfaceFunc, originByX, originByY, numOfPointsByX, numOfPoi
 function makeWave(shift) {
 	var surfaceFunc = {
 		f: function (x, y) {
-			return 2.0*Math.sin(Math.sqrt(x*x + y*y) - shift);
+			return 2.0*Math.sin(Math.sqrt(x*x + y*y) - shift);		
 		},
 		dfdx: function (x, y) {
 			var sqrt = Math.sqrt(x*x + y*y);
 			if (sqrt == 0.0) return 0.0;			
-			return 2.0*x*Math.cos(sqrt - shift)/sqrt;	
+			return 2.0*x*Math.cos(sqrt - shift)/sqrt;
 		},
 		dfdy: function (x, y) {
 			var sqrt = Math.sqrt(x*x + y*y);
 			if (sqrt == 0.0) return 0.0;			
-			return 2.0*y*Math.cos(sqrt - shift)/sqrt;	
+			return 2.0*y*Math.cos(sqrt - shift)/sqrt;			
 		}
 	}
 
@@ -140,17 +137,29 @@ function drawGL() {
 
 	gl.useProgram(program);
 
+	var modelMatrixLocation = gl.getUniformLocation(program, "u_modelMatrix");
+	var viewMatrixLocation = gl.getUniformLocation(program, "u_viewMatrix");
 	var modelviewMatrixLocation = gl.getUniformLocation(program, "u_modelviewMatrix");
-	var projectionMatrixLocation = gl.getUniformLocation(program, "u_projectionMatrix");	
+	var mvpMatrixLocation = gl.getUniformLocation(program, "u_mvpMatrix");	
 	var normalMatrixLocation = gl.getUniformLocation(program, "u_normalMatrix");		
 
 	var modelviewMatrix = mat4.create();
-	mat4.multiply(modelviewMatrix, matrices.viewMatrix, matrices.modelMatrix);
+	mat4.multiply(modelviewMatrix, matrices.viewMatrix, matrices.modelMatrix);	
+	var mvpMatrix = mat4.create();
+	mat4.multiply(mvpMatrix, matrices.projectionMatrix, modelviewMatrix);
 	var normalMatrix = getNormalMatrix(modelviewMatrix);
 
+	gl.uniformMatrix4fv(modelMatrixLocation, false, matrices.modelMatrix);	
+	gl.uniformMatrix4fv(viewMatrixLocation, false, matrices.viewMatrix);	
 	gl.uniformMatrix4fv(modelviewMatrixLocation, false, modelviewMatrix);	
-	gl.uniformMatrix4fv(projectionMatrixLocation, false, matrices.projectionMatrix);		
+	gl.uniformMatrix4fv(mvpMatrixLocation, false, mvpMatrix);		
 	gl.uniformMatrix3fv(normalMatrixLocation, false, normalMatrix);		
+
+	var lightPosLocation = gl.getUniformLocation(program, "u_light_pos");
+	var light_pos = vec4.create();
+	vec4.set(light_pos, 0.0, 100.0, 0.0, 1.0);
+	vec4.transformMat4(light_pos, light_pos, matrices.viewMatrix);
+	gl.uniform4fv(lightPosLocation, light_pos);
 
 	var positionLocation = gl.getAttribLocation(program, "a_position");
 	var normalLocation = gl.getAttribLocation(program, "a_normal");

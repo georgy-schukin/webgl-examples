@@ -25,44 +25,47 @@
 
 		attribute vec3 a_position; 		
 		attribute vec3 a_normal;
-
+		
+		uniform mat4 u_modelMatrix;
 		uniform mat4 u_modelviewMatrix;
-		uniform mat4 u_projectionMatrix;	
-		uniform mat3 u_normalMatrix; 		
+		uniform mat4 u_mvpMatrix;			
+		uniform mat3 u_normalMatrix;
 
 		varying vec3 v_position;
-		varying vec3 v_normal;
-
+		varying vec3 v_normal;				
+	
 		void main() {					
 			vec4 pos = vec4(a_position, 1.0);
-  			gl_Position = u_projectionMatrix * u_modelviewMatrix * pos;  		
-  			v_position = (u_modelviewMatrix * pos).xyz;
-  			v_normal = normalize(u_normalMatrix * a_normal);
+  			v_position = vec3(u_modelviewMatrix * pos);
+  			v_normal = normalize(u_normalMatrix * a_normal); 
+			gl_Position = u_mvpMatrix * pos;  		
 		}
 	</script>
 
 	<script id="frag-shader" type="text/frag-shader">
 		precision mediump float;
-
+		
 		varying vec3 v_position;
-		varying vec3 v_normal;			
+		varying vec3 v_normal;					
+
+		uniform vec4 u_light_pos; // light pos in view space
 
 		vec3 ambient = vec3(0.1, 0.1, 0.1);
 		vec3 light_diffuse = vec3(1.0, 1.0, 1.0);
-		vec3 light_specular = vec3(1.0, 1.0, 1.0);		
-		vec3 light_position = vec3(0.0, 100.0, 0.0); 
+		vec3 light_specular = vec3(1.0, 1.0, 1.0);				
 
 		vec3 material_duffuse = vec3(0.0, 0.9, 0.9);
 		vec3 material_specular = vec3(0.9, 1.0, 1.0);
-		float material_shininess = 5.0;
+		float material_shininess = 5.0;		
 
 		void main() {
-			vec3 norm = normalize(v_normal);
-			vec3 light_direction = normalize(light_position - v_position); // direction towards the light
-			vec3 refl = reflect(-light_direction, norm); // light reflection
-			vec3 view = normalize(-v_position); // view vector from the point to the eye (zero)
+			vec4 pos = vec4(v_position, 1.0); // pos in view space			
+			vec3 light_dir = normalize(u_light_pos.xyz - pos.xyz); // direction towards the light  			
+			vec3 norm = normalize(v_normal);							
+			vec3 refl = reflect(-light_dir, norm); // light reflection
+			vec3 view = normalize(-pos.xyz); // view vector from the point to the eye (zero)
 
-			float diffuse = max(0.0, dot(norm, light_direction));
+			float diffuse = max(0.0, dot(norm, light_dir));
 
 			float specular = 0.0;
 			if (dot(norm, view) > 0.0) {
