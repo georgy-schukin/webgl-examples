@@ -5,6 +5,8 @@ var buffers = {};
 var matrices = {};
 var program;
 var shift = 0.0;
+var waveMeshPointsNum = 101;
+var waveMeshSize = 100.0;
 
 function initGL() {
 	gl.clearColor(0.0, 0.0, 0.2, 1.0);	
@@ -69,25 +71,19 @@ function makeSurface(surfaceFunc, originByX, originByY, numOfPointsByX, numOfPoi
 	}	
 }
 
-function makeWave(shift) {
+function makeWave(meshSize, numOfPoints, shift) {
 	var surfaceFunc = {
-		f: function (x, y) {
-			return 2.0*Math.sin(Math.sqrt(x*x + y*y) - shift);		
+		f: function (x, y) {			
+			return 2.0*Math.sin((x*x + y*y)*0.01 - shift);				
 		},
-		dfdx: function (x, y) {
-			var sqrt = Math.sqrt(x*x + y*y);
-			if (sqrt == 0.0) return 0.0;			
-			return 2.0*x*Math.cos(sqrt - shift)/sqrt;
+		dfdx: function (x, y) {			
+			return 0.04*x*Math.cos((x*x + y*y)*0.01 - shift);
 		},
-		dfdy: function (x, y) {
-			var sqrt = Math.sqrt(x*x + y*y);
-			if (sqrt == 0.0) return 0.0;			
-			return 2.0*y*Math.cos(sqrt - shift)/sqrt;			
+		dfdy: function (x, y) {			
+			return 0.04*y*Math.cos((x*x + y*y)*0.01 - shift);
 		}
 	}
-
-	var numOfPoints = 101;
-	var meshSize = 100.0;	
+	
 	var wave = makeSurface(surfaceFunc, 
 		-meshSize/2, -meshSize/2, 
 		numOfPoints, numOfPoints, 
@@ -108,7 +104,7 @@ function initBuffers() {
 }
 
 function initWave(shift) {
-	var wave = makeWave(shift);
+	var wave = makeWave(waveMeshSize, waveMeshPointsNum, shift);
 
 	initBuffers();
 	
