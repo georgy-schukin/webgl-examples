@@ -21,6 +21,10 @@
 		<td><label>Mesh points:</label></td>
 		<td><input type="number" id="mesh-points" value="101" min="1" max="256"></td>
 		</tr>
+		<tr>
+		<td><label>Analytical normals:</label></td>
+		<td><input type="checkbox" id="a-normals" checked></td>
+		</tr>
 		</table>
 	</div>
 	<canvas id="canvas"></canvas>
@@ -29,9 +33,11 @@
 		$(document).ready( function () {					
 			var $meshSize = $("#mesh-size");
 			var $meshPoints = $("#mesh-points");
+			var $analyticalNormals = $("#a-normals");
 
 			setMeshSize($meshSize.val());
 			setMeshPoints($meshPoints.val());
+			toggleAnalyticalNormals($analyticalNormals.prop("checked"));
 
 			init();			
 			render();
@@ -41,6 +47,9 @@
 			});
 			$meshPoints.change( function (event) {
 				setMeshPoints($(this).val());
+			});
+			$analyticalNormals.change( function (event) {
+				toggleAnalyticalNormals($(this).prop("checked"));
 			});
 		});
 	</script>
