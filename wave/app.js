@@ -267,7 +267,7 @@ function init() {
 }
 
 function render() {	
-	WGL.fitViewportToCanvas(gl);
+	WGL.fitViewportToCanvas(gl);	
 	drawGL();	
 	rotateModel();
 	requestAnimationFrame(render);		
