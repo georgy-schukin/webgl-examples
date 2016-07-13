@@ -105,10 +105,12 @@ function generateSmoothNormals(vertices, indices) {
 	var numOfVertices = Math.floor(vertices.length / 3);
 	for (var vIndex = 0; vIndex < numOfVertices; vIndex++) {
 		var triangles = trianglesPerVertex[vIndex];
-		var normal = vec3.fromValues(0.0, 0.0, 0.0);		
-		triangles.forEach( function (tIndex) {
-			vec3.add(normal, normal, normalsPerTriangle[tIndex]);
-		});
+		var normal = vec3.fromValues(0.0, 0.0, 0.0);
+		if (triangles !== null && triangles !== undefined)	{
+			triangles.forEach( function (tIndex) {
+				vec3.add(normal, normal, normalsPerTriangle[tIndex]);
+			});
+		}
 		normals.push(normal[0]);
 		normals.push(normal[1]);
 		normals.push(normal[2]);
