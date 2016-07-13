@@ -65,7 +65,7 @@ function makeSurface(surfaceFunc, originByX, originByY, numOfPointsByX, numOfPoi
 	}	
 }
 
-function generateAnalyticNormals(surfaceFunc, vertices) {
+function generateAnalyticalNormals(surfaceFunc, vertices) {
 	var normals = [];
 	for (var i = 0; i < vertices.length; i += 3) {
 		var x = vertices[i];
@@ -79,6 +79,11 @@ function generateAnalyticNormals(surfaceFunc, vertices) {
 	return normals;
 }
 
+/**
+ * Generate smooth normals for a given mesh.
+ * @param vertices - flat array of vertex coordinates x, y, z.
+ * @param indices - flat array of vertex indices, 3 indices per triangle.
+ */
 function generateSmoothNormals(vertices, indices) {	
 	// Find which triangles belong to which vertices.
 	var trianglesPerVertex = [];	
@@ -90,15 +95,12 @@ function generateSmoothNormals(vertices, indices) {
 		}
 		trianglesPerVertex[index].push(triangleIndex);
 	}
-	// Compute one normal for each triangle.
-	var normalsPerTriangle = [];
-	var numOfTriangles = Math.floor(indices.length / 3);
-	for (var tIndex = 0; tIndex < numOfTriangles; tIndex++) {		
-		var normal = computeNormal(vertices, 
-			indices[3*tIndex], 
-			indices[3*tIndex + 1], 
-			indices[3*tIndex + 2]);
-		normalsPerTriangle[tIndex] = normal;
+	// Compute one face normal for each triangle.
+	var faceNormals = [];	
+	for (var i = 0; i < indices.length; i += 3) {	
+		var normal = computeFaceNormal(vertices, indices[i], indices[i + 1], indices[i + 2]);
+		var triangleIndex = Math.floor(i/3);
+		faceNormals[triangleIndex] = normal;
 	}
 	// Compute one smooth normal for each vertex.
 	var normals = [];
@@ -108,7 +110,7 @@ function generateSmoothNormals(vertices, indices) {
 		var normal = vec3.fromValues(0.0, 0.0, 0.0);
 		if (triangles !== null && triangles !== undefined)	{
 			triangles.forEach( function (tIndex) {
-				vec3.add(normal, normal, normalsPerTriangle[tIndex]);
+				vec3.add(normal, normal, faceNormals[tIndex]);
 			});
 		}
 		normals.push(normal[0]);
@@ -118,7 +120,12 @@ function generateSmoothNormals(vertices, indices) {
 	return normals;
 }
 
-function computeNormal(vertices, i1, i2, i3) {	
+/**
+ * Compute face normal for a given triangle.
+ * @param vertices - flat array of vertex coordinates x, y, z.
+ * @param i1, i2, i3 - indices of the triangle's vertices in the vertices array.
+ */
+function computeFaceNormal(vertices, i1, i2, i3) {	
 	var x1 = vertices[3*i1];
 	var y1 = vertices[3*i1 + 1];
 	var z1 = vertices[3*i1 + 2];
@@ -153,7 +160,7 @@ function makeWave(meshSize, numOfPoints, shift) {
 		numOfPoints, numOfPoints, 
 		meshSize/(numOfPoints - 1), meshSize/(numOfPoints - 1));		
 	if (useAnalyticalNormals) {
-		wave.normals = generateAnalyticNormals(surfaceFunc, wave.vertices);
+		wave.normals = generateAnalyticalNormals(surfaceFunc, wave.vertices);
 	} else {
 		wave.normals = generateSmoothNormals(wave.vertices, wave.indices);
 	}
