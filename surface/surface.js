@@ -83,6 +83,10 @@ function drawGL() {
 	gl.uniformMatrix4fv(viewMatrixLocation, false, matrices.viewMatrix);		
 	gl.uniformMatrix4fv(projectionMatrixLocation, false, matrices.projectionMatrix);			
 
+	var shiftLocation = gl.getUniformLocation(program, "u_shift");			
+	gl.uniform1f(shiftLocation, shift);
+	//shift += 0.05;
+
 	var lightPosLocation = gl.getUniformLocation(program, "u_light_pos");
 	var light_pos = vec4.create();
 	vec4.set(light_pos, 0.0, 100.0, 0.0, 1.0);
