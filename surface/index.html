@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>	
+	<title>Surface with WebGL</title>	
+	<meta charset="utf-8">
+	<link rel="stylesheet" type="text/css" href="../common/css/style.css">	
+	<script type="text/javascript" src="../lib/jquery-3.0.0.min.js"></script>		
+	<script type="text/javascript" src="../lib/requestAnimationFrame.js"></script>		
+	<script type="text/javascript" src="../lib/gl-matrix-min.js"></script>		
+	<script type="text/javascript" src="../lib/wgl/wgl.js"></script>		
+	<script type="text/javascript" src="../lib/wgl/mesh.js"></script>
+	<script type="text/javascript" src="surface.js"></script>
+</head>
+<body>	
+	<canvas id="canvas"></canvas>
+	<div id="controls-pane">
+		<table>
+		<tr>
+		<td><label>Mesh size:</label></td>
+		<td><input type="number" id="mesh-size" value="100" min="1" max="1000"></td>
+		</tr>
+		<tr>
+		<td><label>Mesh points:</label></td>
+		<td><input type="number" id="mesh-points" value="101" min="2" max="256"></td>
+		</tr>		
+		</table>
+	</div>	
+
+	<script type="text/javascript">	
+		$(document).ready( function () {					
+			var $meshSize = $("#mesh-size");
+			var $meshPoints = $("#mesh-points");			
+		
+			init();			
+
+			setMeshSize($meshSize.val());
+			setMeshPoints($meshPoints.val());			
+
+			render();
+
+			$meshSize.change( function (event) {
+				setMeshSize($(this).val());
+			});
+			$meshPoints.change( function (event) {
+				setMeshPoints($(this).val());
+			});			
+		});
+	</script>
+
+	<script id="vert-shader" type="text/vert-shader">
+		precision mediump float;
+
+		attribute vec3 a_position; 				
+		
+		uniform mat4 u_modelMatrix;
+		uniform mat4 u_viewMatrix;
+		uniform mat4 u_projectionMatrix;					
+
+		varying vec4 v_eye_position;
+		varying vec4 v_world_position;
+
+		float func(float x, float y) {
+			return 2.0*sin(sqrt(x*x + y*y));
+		}	
+	
+		void main() {					
+			vec4 pos = vec4(a_position, 1.0);
+  			vec4 world_pos = u_modelMatrix * pos;  	
+  			world_pos.y = func(world_pos.x, world_pos.z);
+  			v_world_position = world_pos;		
+  			v_eye_position = u_viewMatrix * v_world_position;
+			gl_Position = u_projectionMatrix * v_eye_position;  		
+		}
+	</script>
+
+	<script id="frag-shader" type="text/frag-shader">
+		precision mediump float;
+		
+		varying vec4 v_eye_position;
+		varying vec4 v_world_position;
+
+		uniform vec4 u_light_pos; // light pos in view space
+		uniform mat4 u_viewMatrix;
+
+		vec3 ambient = vec3(0.1, 0.1, 0.1);
+		vec3 light_diffuse = vec3(1.0, 1.0, 1.0);
+		vec3 light_specular = vec3(1.0, 1.0, 1.0);				
+
+		vec3 material_duffuse = vec3(0.0, 0.9, 0.9);
+		vec3 material_specular = vec3(0.9, 1.0, 1.0);
+		float material_shininess = 5.0;	
+
+		float dfdx(float x, float y) {
+			return x*cos(sqrt(x*x + y*y))/sqrt(x*x + y*y);
+		}	
+
+		float dfdy(float x, float y) {
+			return y*cos(sqrt(x*x + y*y))/sqrt(x*x + y*y);
+		}
+
+		void main() {			
+			vec4 pos = v_eye_position; // pos in view space			
+			vec4 light_dir = normalize(u_light_pos - pos); // direction towards the light  			
+			float x = v_world_position.x;
+			float z = v_world_position.z;			
+			vec4 world_norm = normalize(vec4(-dfdx(x, z), 1.0, -dfdy(x, z), 0.0));	
+			vec4 norm = u_viewMatrix * world_norm; // normal in view/eye space
+			vec4 refl = reflect(-light_dir, norm); // light reflection
+			vec4 view = normalize(vec4(0.0, 0.0, 0.0, 1.0) - pos); // view vector from the point to the eye (zero)
+
+			float diffuse = max(0.0, dot(norm, light_dir));
+
+			float specular = 0.0;
+			if (dot(norm, view) > 0.0) {
+				specular = pow(max(0.0, dot(refl, view)), material_shininess);
+			} 
+
+			vec3 color = clamp(ambient 
+				+ diffuse*light_diffuse*material_duffuse 
+				+ specular*light_specular*material_specular, 0.0, 1.0);			
+	 		gl_FragColor = vec4(color, 1.0);  	 		
+		}
+	</script>
+</body>
+</html>
