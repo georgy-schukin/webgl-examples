@@ -50,16 +50,16 @@
 	<script id="funcs" type="text/shader">
 		precision mediump float;
 
-		float func(float x, float y, float shift) {
+		float surfaceFunc(float x, float y, float shift) {
 			return 2.0*sin(sqrt(x*x + y*y) - shift);
 		}
 
-		float dfdx(float x, float y, float shift) {
+		float surfaceDfDx(float x, float y, float shift) {
 			float sq = sqrt(x*x + y*y);
 			return x*cos(sq - shift)/max(sq, 1e-6);
 		}	
 
-		float dfdy(float x, float y, float shift) {
+		float surfaceDfDy(float x, float y, float shift) {
 			float sq = sqrt(x*x + y*y);
 			return y*cos(sq - shift)/max(sq, 1e-6);
 		}
@@ -71,20 +71,20 @@
 		attribute vec3 a_position; 				
 		
 		uniform float u_shift;
-		uniform mat4 u_modelMatrix;
+		uniform mat4 u_modelMatrix;		
 		uniform mat4 u_viewMatrix;
-		uniform mat4 u_projectionMatrix;					
+		uniform mat4 u_projectionMatrix;				
 		
 		varying vec4 v_world_position;
-		varying vec4 v_view_position;
+		varying vec4 v_eye_position;
 		
 		void main() {					
 			vec4 pos = vec4(a_position, 1.0);
   			vec4 world_pos = u_modelMatrix * pos;  	
-  			world_pos.y = func(world_pos.x, world_pos.z, u_shift);
+  			world_pos.y += surfaceFunc(world_pos.x, world_pos.z, u_shift);
   			v_world_position = world_pos;		  			
-  			v_view_position = u_viewMatrix * v_world_position;
-			gl_Position = u_projectionMatrix * v_view_position;  		
+  			v_eye_position = u_viewMatrix * v_world_position;
+			gl_Position = u_projectionMatrix * v_eye_position;  		
 		}
 	</script>
 
@@ -92,11 +92,11 @@
 		precision mediump float;
 				
 		varying vec4 v_world_position;
-		varying vec4 v_view_position;
+		varying vec4 v_eye_position;
 
 		uniform float u_shift;
 		uniform vec4 u_light_pos; // light pos in view space
-		uniform mat4 u_viewMatrix;
+		uniform mat3 u_normalViewMatrix;	
 
 		vec3 ambient = vec3(0.1, 0.1, 0.1);
 		vec3 light_diffuse = vec3(1.0, 1.0, 1.0);
@@ -106,14 +106,17 @@
 		vec3 material_specular = vec3(0.9, 1.0, 1.0);
 		float material_shininess = 5.0;			
 
-		void main() {	
-			float x = v_world_position.x;
-			float z = v_world_position.z;							
-			vec4 pos = v_view_position; // pos in view space			
+		void main() {				
+			vec4 pos = v_eye_position; // pos in view space			
 			vec4 light_dir = normalize(u_light_pos - pos); // direction towards the light  			
 			
-			vec3 world_norm = normalize(vec3(-dfdx(x, z, u_shift), 1.0, -dfdy(x, z, u_shift)));	
-			vec4 norm = u_viewMatrix * vec4(world_norm, 0.0); // normal in view/eye space
+			float x = v_world_position.x;
+			float z = v_world_position.z;
+			float dfdx = surfaceDfDx(x, z, u_shift);
+			float dfdy = surfaceDfDy(x, z, u_shift);
+			vec3 world_norm = vec3(-dfdx, 1.0, -dfdy);
+
+			vec4 norm = normalize(vec4(u_normalViewMatrix * world_norm, 0.0)); // normal in eye space
 			vec4 refl = reflect(-light_dir, norm); // light reflection
 			vec4 view = normalize(vec4(-pos.xyz, 0.0)); // view vector from the point to the eye (zero)
 

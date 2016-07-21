@@ -79,11 +79,17 @@ function drawGL() {
 
 	var modelMatrixLocation = gl.getUniformLocation(program, "u_modelMatrix");
 	var viewMatrixLocation = gl.getUniformLocation(program, "u_viewMatrix");	
-	var projectionMatrixLocation = gl.getUniformLocation(program, "u_projectionMatrix");			
+	var projectionMatrixLocation = gl.getUniformLocation(program, "u_projectionMatrix");	
+	var normalViewMatrixLocation = gl.getUniformLocation(program, "u_normalViewMatrix");	
+
+	// Matrix to convert normales from world to eye space.
+	// Assume model matrix is identity here, then modelview = view.  
+	var normalViewMatrix = getNormalMatrix(matrices.viewMatrix);
 
 	gl.uniformMatrix4fv(modelMatrixLocation, false, matrices.modelMatrix);	
 	gl.uniformMatrix4fv(viewMatrixLocation, false, matrices.viewMatrix);		
-	gl.uniformMatrix4fv(projectionMatrixLocation, false, matrices.projectionMatrix);			
+	gl.uniformMatrix4fv(projectionMatrixLocation, false, matrices.projectionMatrix);
+	gl.uniformMatrix3fv(normalViewMatrixLocation, false, normalViewMatrix);			
 
 	var shiftLocation = gl.getUniformLocation(program, "u_shift");			
 	gl.uniform1f(shiftLocation, shift);
@@ -107,7 +113,7 @@ function drawGL() {
 }
 
 function rotateModel() {
-	mat4.rotate(matrices.viewMatrix, matrices.viewMatrix, Math.PI/(4*180.0), [0, 1, 0]);
+	mat4.rotate(matrices.viewMatrix, matrices.viewMatrix, -Math.PI/(4*180.0), [0, 1, 0]);
 }
 
 function init() {
