@@ -26,7 +26,9 @@ function initMatrices() {
 
 function initProgram() {
 	try {
-		program = WGL.createProgramFromScripts(gl, "vert-shader", "frag-shader");
+		var vertexShader = WGL.compileShaderFromScripts(gl, gl.VERTEX_SHADER, ["funcs", "vert-shader"]);
+		var fragmentShader = WGL.compileShaderFromScripts(gl, gl.FRAGMENT_SHADER, ["funcs", "frag-shader"]);
+		program = WGL.createProgram(gl, [vertexShader, fragmentShader]);
 	} 
 	catch (err) {		
 		alert(err.toString());
@@ -85,7 +87,7 @@ function drawGL() {
 
 	var shiftLocation = gl.getUniformLocation(program, "u_shift");			
 	gl.uniform1f(shiftLocation, shift);
-	//shift += 0.05;
+	shift += 0.05;
 
 	var lightPosLocation = gl.getUniformLocation(program, "u_light_pos");
 	var light_pos = vec4.create();

@@ -17,7 +17,7 @@
 		<table>
 		<tr>
 		<td><label>Mesh size:</label></td>
-		<td><input type="number" id="mesh-size" value="100" min="1" max="1000"></td>
+		<td><input type="number" id="mesh-size" value="50" min="1" max="100"></td>
 		</tr>
 		<tr>
 		<td><label>Mesh points:</label></td>
@@ -47,6 +47,24 @@
 		});
 	</script>
 
+	<script id="funcs" type="text/shader">
+		precision mediump float;
+
+		float func(float x, float y, float shift) {
+			return 2.0*sin(sqrt(x*x + y*y) - shift);
+		}
+
+		float dfdx(float x, float y, float shift) {
+			float sq = sqrt(x*x + y*y);
+			return x*cos(sq - shift)/max(sq, 1e-6);
+		}	
+
+		float dfdy(float x, float y, float shift) {
+			float sq = sqrt(x*x + y*y);
+			return y*cos(sq - shift)/max(sq, 1e-6);
+		}
+	</script>	
+
 	<script id="vert-shader" type="text/vert-shader">
 		precision mediump float;
 
@@ -58,17 +76,15 @@
 		uniform mat4 u_projectionMatrix;					
 		
 		varying vec4 v_world_position;
-
-		float func(float x, float y, float shift) {
-			return 2.0*sin(sqrt(x*x + y*y - shift));
-		}	
-	
+		varying vec4 v_view_position;
+		
 		void main() {					
 			vec4 pos = vec4(a_position, 1.0);
   			vec4 world_pos = u_modelMatrix * pos;  	
   			world_pos.y = func(world_pos.x, world_pos.z, u_shift);
   			v_world_position = world_pos;		  			
-			gl_Position = u_projectionMatrix * u_viewMatrix * v_world_position;  		
+  			v_view_position = u_viewMatrix * v_world_position;
+			gl_Position = u_projectionMatrix * v_view_position;  		
 		}
 	</script>
 
@@ -76,6 +92,7 @@
 		precision mediump float;
 				
 		varying vec4 v_world_position;
+		varying vec4 v_view_position;
 
 		uniform float u_shift;
 		uniform vec4 u_light_pos; // light pos in view space
@@ -87,33 +104,18 @@
 
 		vec3 material_duffuse = vec3(0.0, 0.9, 0.9);
 		vec3 material_specular = vec3(0.9, 1.0, 1.0);
-		float material_shininess = 5.0;	
-
-		float func(float x, float y, float shift) {
-			return 2.0*sin(sqrt(x*x + y*y) - shift);
-		}
-
-		float dfdx(float x, float y, float shift) {
-			float sq = sqrt(x*x + y*y);
-			return x*cos(sq - shift)/sq;
-		}	
-
-		float dfdy(float x, float y, float shift) {
-			float sq = sqrt(x*x + y*y);
-			return y*cos(sq - shift)/sq;
-		}
+		float material_shininess = 5.0;			
 
 		void main() {	
 			float x = v_world_position.x;
-			float z = v_world_position.z;				
-			vec4 world_pos = vec4(x, func(x, z, u_shift), z, 1.0);			
-			vec4 pos = u_viewMatrix * world_pos; // pos in view space			
+			float z = v_world_position.z;							
+			vec4 pos = v_view_position; // pos in view space			
 			vec4 light_dir = normalize(u_light_pos - pos); // direction towards the light  			
 			
-			vec4 world_norm = normalize(vec4(-dfdx(x, z, u_shift), 1.0, -dfdy(x, z, u_shift), 0.0));	
-			vec4 norm = u_viewMatrix * world_norm; // normal in view/eye space
+			vec3 world_norm = normalize(vec3(-dfdx(x, z, u_shift), 1.0, -dfdy(x, z, u_shift)));	
+			vec4 norm = u_viewMatrix * vec4(world_norm, 0.0); // normal in view/eye space
 			vec4 refl = reflect(-light_dir, norm); // light reflection
-			vec4 view = normalize(vec4(0.0, 0.0, 0.0, 1.0) - pos); // view vector from the point to the eye (zero)
+			vec4 view = normalize(vec4(-pos.xyz, 0.0)); // view vector from the point to the eye (zero)
 
 			float diffuse = max(0.0, dot(norm, light_dir));
 
